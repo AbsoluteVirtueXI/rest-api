@@ -1,8 +1,9 @@
 const express = require('express')
 const db = require('./mydb')
 
-const IP = '192.168.0.10'
-const PORT = 3333
+require('dotenv').config()
+const IP = process.env.IP
+const PORT = process.env.PORT
 
 const app = express()
 
@@ -39,7 +40,6 @@ const validateApiKey = async (req, res, next) => {
       next()
     }
   } catch (e) {
-    console.log(e)
     res.status(500).json({ code: 'error', message: 'Internal server error' })
   }
 }
@@ -171,7 +171,6 @@ app.get('/read_message/:username', async (req, res) => {
       return
     }
     const result = await db.readMessage(req.userId, peerUser.id)
-    console.log(result)
     const messages = result.map((message) => {
       if (message.srcId === req.userId) {
         message.src = req.username
