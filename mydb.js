@@ -126,6 +126,7 @@ exports.sendMessage = async (srcId, dstId, content) => {
 exports.readMessage = async (user1Id, user2Id) => {
   try {
     return await prisma.message.findMany({
+      // par exemple: SELECT * FROM message WHERE src_id = 3 AND dst_id = 1 OR src_id = 1 AND dst_id = 3 ORDER BY created_at ASC;
       where: {
         OR: [
           {
@@ -143,7 +144,9 @@ exports.readMessage = async (user1Id, user2Id) => {
               {
                 srcId: user2Id,
               },
-              { dstId: user1Id },
+              {
+                dstId: user1Id,
+              },
             ],
           },
         ],

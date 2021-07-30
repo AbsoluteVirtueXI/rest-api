@@ -118,7 +118,7 @@ app.get('/user_by_username/:username', async (req, res) => {
 })
 
 app.post('/send_message', async (req, res) => {
-  const dst = req.body.dst
+  const dst = req.body.dst // dst est une string
   const content = req.body.content
   try {
     const resultDstUser = await db.getUserByUsername(dst)
@@ -171,8 +171,9 @@ app.get('/read_message/:username', async (req, res) => {
       return
     }
     const result = await db.readMessage(req.userId, peerUser.id)
+    console.log(result)
     const messages = result.map((message) => {
-      if (message.srcId === req.username) {
+      if (message.srcId === req.userId) {
         message.src = req.username
         message.dst = peerUsername
       } else {
