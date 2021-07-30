@@ -35,6 +35,7 @@ const validateApiKey = async (req, res, next) => {
       res.status(403).json({ status: 'fail', data: { key: 'Invalid api key' } })
     } else {
       req.userId = result.id
+      req.username = result.username
       next()
     }
   } catch (e) {
@@ -97,22 +98,102 @@ app.get('/myinfo', async (req, res) => {
     if (e.status === 'fail') {
       res.status(400).json({ status: e.status, data: e.dataError })
     } else {
-      // e.status === 50X
       res.status(500).json({ status: e.status, message: e.message })
     }
   }
 })
 
 app.get('/user_by_username/:username', async (req, res) => {
-  // A implementer
+  const username = req.params.username
+  try {
+    const result = await db.getUserByUsername(username)
+    res.json({ status: 'success', data: { user: result } })
+  } catch (e) {
+    if (e.status === 'fail') {
+      res.status(400).json({ status: e.status, data: e.dataError })
+    } else {
+      res.status(500).json({ status: e.status, message: e.message })
+    }
+  }
 })
 
-app.post('/send_message/:username', async (req, res) => {
-  // A implementer
+app.post('/send_message', async (req, res) => {
+  const dst = req.body.dst
+  const content = req.body.content
+  try {
+    const resultDstUser = await db.getUserByUsername(dst)
+    if (!resultDstUser) {
+      res.status(400).json({
+        status: 'fail',
+        data: { message_sent: false, message: `${dst} does not exist` },
+      })
+      return
+    }
+    if (resultDstUser.id === req.userId) {
+      res.status(400).json({
+        status: 'fail',
+        data: {
+          message_sent: false,
+          message: `you can not send a message to yourself`,
+        },
+      })
+      return
+    }
+    const result = await db.sendMessage(req.userId, resultDstUser.id, content)
+    res.json({ status: 'success', data: { message_sent: true } })
+  } catch (e) {
+    if (e.status === 'fail') {
+      res.status(400).json({ status: e.status, data: e.dataError })
+    } else {
+      res.status(500).json({ status: e.status, message: e.message })
+    }
+  }
 })
 
-app.get('/read_message/', async (req, res) => {
-  // A implementer
+app.get('/read_message/:username', async (req, res) => {
+  const peerUsername = req.params.username
+  if (peerUsername === req.username) {
+    res.status(400).json({
+      status: 'fail',
+      data: {
+        messages: `you can not have a conversation with yourself`,
+      },
+    })
+    return
+  }
+  try {
+    const peerUser = await db.getUserByUsername(peerUsername)
+    if (!peerUser) {
+      res.status(400).json({
+        status: 'fail',
+        data: { messages: `${peerUsername} does not exist` },
+      })
+      return
+    }
+    const result = await db.readMessage(req.userId, peerUser.id)
+    const messages = result.map((message) => {
+      if (message.srcId === req.username) {
+        message.src = req.username
+        message.dst = peerUsername
+      } else {
+        message.src = peerUsername
+        message.dst = req.username
+      }
+      delete message.srcId
+      delete message.dstId
+      return message
+    })
+    res.json({
+      status: 'success',
+      data: { messages: result },
+    })
+  } catch (e) {
+    if (e.status === 'fail') {
+      res.status(400).json({ status: e.status, data: e.dataError })
+    } else {
+      res.status(500).json({ status: e.status, message: e.message })
+    }
+  }
 })
 
 app.listen(PORT, IP, () => {

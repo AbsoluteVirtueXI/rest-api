@@ -84,12 +84,11 @@ exports.getUserByApiKey = async (apiKey) => {
 
 exports.getUserById = async (userId) => {
   try {
-    const result = await prisma.user.findUnique({
+    return await prisma.user.findUnique({
       where: {
         id: userId,
       },
     })
-    return result
   } catch (e) {
     customizeError(e)
     throw e
@@ -97,9 +96,70 @@ exports.getUserById = async (userId) => {
 }
 
 exports.getUserByUsername = async (username) => {
-  // A implementer
+  try {
+    return await prisma.user.findUnique({
+      where: {
+        username: username,
+      },
+    })
+  } catch (e) {
+    customizeError(e)
+    throw e
+  }
 }
 
 exports.sendMessage = async (srcId, dstId, content) => {
-  // A Implementer
+  try {
+    return await prisma.message.create({
+      data: {
+        srcId: srcId,
+        dstId: dstId,
+        content: content,
+      },
+    })
+  } catch (e) {
+    customizeError(e)
+    throw e
+  }
+}
+
+exports.readMessage = async (user1Id, user2Id) => {
+  try {
+    return await prisma.message.findMany({
+      where: {
+        OR: [
+          {
+            AND: [
+              {
+                srcId: user1Id,
+              },
+              {
+                dstId: user2Id,
+              },
+            ],
+          },
+          {
+            AND: [
+              {
+                srcId: user2Id,
+              },
+              { dstId: user1Id },
+            ],
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: {
+        srcId: true,
+        dstId: true,
+        content: true,
+        createdAt: true,
+      },
+    })
+  } catch (e) {
+    customizeError(e)
+    throw e
+  }
 }
